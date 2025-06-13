@@ -487,7 +487,7 @@
                 shuffledActions.forEach(action => {
                     let placed = false;
                     let attemptsToFindDay = 0;
-                    const MAX_DAY_FIND_ATTEMPTS = duration * 2; // Обмеження для уникнення нескінченного циклу
+                    const MAX_DAY_FIND_ATTEMPTS = duration * 2 * maxActionsPerDay; // Збільшимо кількість спроб, щоб дати більше шансів
 
                     while (!placed && attemptsToFindDay < MAX_DAY_FIND_ATTEMPTS) {
                         let targetDay;
@@ -532,11 +532,31 @@
             for (let day = 1; day <= duration; day++) {
                 tableHeaders += `<th>День ${day}</th>`;
             }
+            // Додаємо новий заголовок для унікальних дій
+            tableHeaders += `<th>Унікальні дії (кількість)</th>`; 
             
             // Створюємо рядки таблиці
             let tableRows = '';
             for (let accountIndex = 0; accountIndex < accountCount; accountIndex++) {
                 tableRows += `<tr><td class="account-header">Акаунт ${accountIndex + 1}</td>`;
+                
+                // Збираємо всі дії для поточного акаунта для підрахунку унікальних
+                const allAccountActions = [];
+                for (let day = 0; day < duration; day++) {
+                    const dailyActions = schedules[accountIndex][day];
+                    allAccountActions.push(...dailyActions); // Додаємо всі дії з дня
+                }
+                
+                // Рахуємо кількість кожної унікальної дії
+                const uniqueActionCounts = {};
+                allAccountActions.forEach(actionName => {
+                    uniqueActionCounts[actionName] = (uniqueActionCounts[actionName] || 0) + 1;
+                });
+
+                // Форматуємо для відображення: "Назва дії - Кількість"
+                let uniqueActionsText = Object.keys(uniqueActionCounts)
+                    .map(actionName => `${actionName} - ${uniqueActionCounts[actionName]}`)
+                    .join('<br>'); // Розділяємо HTML-переносами рядків
                 
                 for (let day = 0; day < duration; day++) {
                     const dailyActions = schedules[accountIndex][day];
@@ -546,6 +566,8 @@
                     tableRows += `<td>${actionsText}</td>`;
                 }
                 
+                // Додаємо осередок з деталізацією унікальних дій
+                tableRows += `<td>${uniqueActionsText || '-'}</td>`; // Якщо немає унікальних дій, ставимо '-'
                 tableRows += '</tr>';
             }
             
@@ -590,7 +612,7 @@
             const rows = table.querySelectorAll('tbody tr');
             Array.from(rows).forEach(row => {
                 const cells = row.querySelectorAll('td');
-                const rowData = Array.from(cells).map(td => {
+                const rowData = Array.from(cells).map((td, index) => {
                     // 1. Отримуємо внутрішній HTML вміст осередку.
                     let cellHtml = td.innerHTML;
 
@@ -684,6 +706,7 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                overflow: auto;
                 z-index: 1000;
             `;
 
@@ -694,7 +717,7 @@
                 border-radius: 15px;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.2);
                 text-align: center;
-                max-width: 400px;
+                max-width: 700px;
                 width: 90%;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 color: #333;
@@ -748,6 +771,7 @@
                 { name: 'коментар ютуб', min: 2, max: 5, isGoogleService: true },
                 { name: 'підписка на канал ютуб', min: 2, max: 4, isGoogleService: true },
                 { name: 'відгук гугл мапс', min: 2, max: 4, isGoogleService: true },
+                { name: 'коментар гугл мапс', min: 3, max: 5, isGoogleService: true },
                 { name: 'відповідь на лист гмейл', min: 4, max: 6, isGoogleService: true },
                 { name: 'новини', min: 3, max: 4, isGoogleService: false },
                 { name: 'погода', min: 3, max: 4, isGoogleService: false },
